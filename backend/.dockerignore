@@ -1,0 +1,14 @@
+bin/
+obj/
+.git
+.gitignore
+.vs/
+*.user
+*.suo
+*.csproj.user
+.idea/
+*.sln.iml
+*.secret.json
+.DS_Store
+Thumbs.db
+*.log
