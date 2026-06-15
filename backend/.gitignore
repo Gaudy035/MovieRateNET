@@ -1,0 +1,25 @@
+# .NET build artifacts
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.csproj.user
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Secret / local config files (commit the example template instead)
+appsettings.json
+appsettings.Development.json
+*.secret.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
