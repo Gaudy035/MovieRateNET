@@ -51,6 +51,26 @@ public class AuthController: ControllerBase
         Response.Cookies.Delete("refresh_token");
     }
 
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh()
+    {
+        var refreshTokenValue = Request.Cookies["refresh_token"];
+        if (string.IsNullOrEmpty(refreshTokenValue))
+        {
+            return Unauthorized();
+        }
+
+        var tokens = await _authService.Refresh(refreshTokenValue);
+        if (tokens == null)
+        {
+            return Unauthorized();
+        }
+
+        CreateToken(tokens.AccessToken, tokens.RefreshToken);
+        
+        return Ok(new { message = "Token odswiezony" });
+    }
+
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
