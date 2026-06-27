@@ -34,7 +34,7 @@ public class AuthService: IAuthService
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim(ClaimTypes.Email, userEmail)
             ]),
-            Expires = DateTime.UtcNow.AddDays(1),
+            Expires = DateTime.UtcNow.AddMinutes(15),
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(key),
                 SecurityAlgorithms.HmacSha256Signature
@@ -92,7 +92,7 @@ public class AuthService: IAuthService
         }
         
         await RevokeToken(refreshTokenValue);
-        
+
         if (refreshToken.ExpiresAt <= DateTimeOffset.UtcNow)
         {
             return null;
