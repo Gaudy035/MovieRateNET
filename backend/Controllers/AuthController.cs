@@ -21,20 +21,34 @@ public class AuthController: ControllerBase
         _authService = authService;
     }
 
-    private void ClearToken()
+    private void CreateToken(string accessToken, string refreshToken)
     {
-        Response.Cookies.Delete("access_token");
-    }
-
-    private void CreateToken(string token)
-    {
-        Response.Cookies.Append("access_token", token, new CookieOptions
+        Response.Cookies.Append("access_token", accessToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = false,
             SameSite = SameSiteMode.Lax,
             Expires = DateTime.UtcNow.AddDays(1)
         });
+        
+        Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Lax,
+            Expires = DateTime.UtcNow.AddDays(1)
+        });
+    }
+
+    private async Task ClearToken()
+    {
+        var refreshToken = Request.Cookies["refresh_token"];
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            await _authService.RevokeToken(refreshToken);
+        }
+        Response.Cookies.Delete("access_token");
+        Response.Cookies.Delete("refresh_token");
     }
 
     [HttpPost("register")]
@@ -45,29 +59,27 @@ public class AuthController: ControllerBase
         {
             return BadRequest( new ErrorResponoseDto { StatusCode = 400, Message= "Adres email jest juz zajety" });
         }
-        else
+        
+        var newUser = new LoginDto
         {
-            var newUser = new LoginDto
-            {
-                Email = dto.Email,
-                Password = dto.Password
-            };
-            var token = await _authService.Login(newUser);
-            CreateToken(token!);
-            return Ok(new { message = "Zarejestrowano pomyslnie" });
-        }
+            Email = dto.Email,
+            Password = dto.Password
+        };
+        var tokens = await _authService.Login(newUser);
+        CreateToken(tokens!.AccessToken, tokens!.RefreshToken);
+        return Ok(new { message = "Zarejestrowano pomyslnie" });
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        var token = await _authService.Login(dto);
-        if (token == null)
+        var tokens = await _authService.Login(dto);
+        if (tokens == null)
         {
             return BadRequest(new ErrorResponoseDto{ StatusCode = 400, Message = "Nieprawidlowy email lub haslo" });
         }
 
-        CreateToken(token);
+        CreateToken(tokens!.AccessToken, tokens!.RefreshToken);
 
         return Ok(new { message = "Zalogowano pomyslnie" });
     }
@@ -75,7 +87,7 @@ public class AuthController: ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        ClearToken();
+        await ClearToken();
         return Ok(new { message = "Wylogowano pomyslnie" });
     }
 
@@ -93,7 +105,7 @@ public class AuthController: ControllerBase
         
         if (success)
         {
-            ClearToken();
+            await ClearToken();
             return Ok(new { message = "Zmiana adresu email pomyslna" });
         } 
         else
@@ -116,7 +128,7 @@ public class AuthController: ControllerBase
 
         if (success)
         {
-            ClearToken();
+            await ClearToken();
             return Ok(new { message = "Zmiana adresu email pomyslna" });
         } 
         else

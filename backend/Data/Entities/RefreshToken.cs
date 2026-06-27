@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace backend.Data.Entities;
 
-[Table("t_refresh_token")]
+[Table("t_refresh_tokens")]
 public class RefreshToken
 {
     [Key]
@@ -14,12 +14,13 @@ public class RefreshToken
     [Required]
     public int UserId { get; set; }
 
-    [Column("token")]
+    [Column("token_value")]
+    [MaxLength(128)]
     [Required]
-    public string Token { get; set; } = string.Empty;
+    public string TokenValue { get; set; } = string.Empty;
 
     [Column("is_active")]
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; set; }
 
     [Column("expires_at")]
     [Required]

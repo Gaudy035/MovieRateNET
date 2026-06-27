@@ -5,6 +5,8 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using backend.Data.Entities;
+using System.Security.Cryptography;
 
 namespace backend.Services;
 
@@ -19,20 +21,8 @@ public class AuthService: IAuthService
         _context = context;
     }
 
-    public async Task<string?> Login(LoginDto dto)
+    private string GenerateAccessToken(int userId, string userEmail)
     {
-        var user = await _context.Users
-            .FirstOrDefaultAsync( u => u.Email == dto.Email);
-        if (user == null)
-        {
-            return null;
-        }
-
-        if(!BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
-        {
-            return null;
-        }
-
         var tokenHandler = new JwtSecurityTokenHandler();
 
         var keyStr = _configuration["Jwt:Key"];
@@ -41,8 +31,8 @@ public class AuthService: IAuthService
         var tokenDescriptor = new SecurityTokenDescriptor()
         {
             Subject = new ClaimsIdentity([
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Email, user.Email)
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Email, userEmail)
             ]),
             Expires = DateTime.UtcNow.AddDays(1),
             SigningCredentials = new SigningCredentials(
@@ -53,5 +43,63 @@ public class AuthService: IAuthService
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
+    }
+
+    private async Task<RefreshToken> GenerateRefreshToken(int userId)
+    {
+        var randomBytes = new byte[64];
+        RandomNumberGenerator.Fill(randomBytes);
+        var tokenValue = Convert.ToBase64String(randomBytes);
+
+        var newRefreshToken = new RefreshToken
+        {
+            UserId = userId,
+            TokenValue = tokenValue,
+            IsActive = true,
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7)
+        };
+
+        _context.RefreshTokens.Add(newRefreshToken);
+        await _context.SaveChangesAsync();
+        return newRefreshToken;
+    }
+
+    public async Task<bool> RevokeToken(string refreshTokenValue)
+    {
+        var refreshToken = await _context.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.TokenValue == refreshTokenValue);
+        if(refreshToken == null)
+        {
+            return false;
+        }
+        
+        refreshToken.IsActive = false;
+        refreshToken.RevokedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<LoginResponseDto?> Login(LoginDto dto)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == dto.Email);
+        if (user == null)
+        {
+            return null;
+        }
+
+        if(!BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
+        {
+            return null;
+        }
+
+        var accessToken = GenerateAccessToken(user.UserId, user.Email);
+        var refreshToken = await GenerateRefreshToken(user.UserId);
+
+        return new LoginResponseDto
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken.TokenValue
+        };
     }
 }

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace backend.DTOs.Auth;
 
-public class TokenResponseDto
+public class LoginResponseDto
 {
     [Required]
     public string AccessToken = string.Empty;

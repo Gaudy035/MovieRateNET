@@ -32,6 +32,16 @@ CREATE TABLE t_reviews(
 	CONSTRAINT unique_user_review UNIQUE (user_id, movie_id)
 );
 
+CREATE TABLE t_refresh_tokens(
+	token_id SERIAL PRIMARY KEY,
+	user_id INT NOT NULL REFERENCES
+		t_users(user_id) ON DELETE CASCADE,
+	token_value VARCHAR(128) NOT NULL,
+	is_active BOOLEAN,
+	expires_at TIMESTAMPTZ NOT NULL,
+	revoked_at TIMESTAMPTZ
+);
+
 -- Inserts
 
 INSERT INTO t_movies (title, description, release_year, poster_url, duration)
