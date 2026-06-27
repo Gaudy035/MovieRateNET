@@ -26,7 +26,6 @@ public class User
     [Column("password")]
     public string Password { set; get; } = string.Empty;
 
-
     [Column("created_at")]
     public DateTimeOffset? CreatedAt { get; set;}
 
