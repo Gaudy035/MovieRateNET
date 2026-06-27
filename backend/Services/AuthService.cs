@@ -79,6 +79,35 @@ public class AuthService: IAuthService
         return true;
     }
 
+    public async Task<LoginResponseDto?> Refresh(string refreshTokenValue)
+    {
+        var refreshToken = await _context.RefreshTokens
+            .Include(rt => rt.User)
+            .FirstOrDefaultAsync(rt => rt.TokenValue == refreshTokenValue);
+
+        
+        if (refreshToken == null || !refreshToken.IsActive)
+        {
+            return null;
+        }
+        
+        await RevokeToken(refreshTokenValue);
+        
+        if (refreshToken.ExpiresAt <= DateTimeOffset.UtcNow)
+        {
+            return null;
+        }
+        
+        var newAccessToken = GenerateAccessToken(refreshToken.UserId, refreshToken.User.Email);
+        var newRefreshToken = await GenerateRefreshToken(refreshToken.UserId);
+
+        return new LoginResponseDto
+        {
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken.TokenValue
+        };
+    }
+
     public async Task<LoginResponseDto?> Login(LoginDto dto)
     {
         var user = await _context.Users
