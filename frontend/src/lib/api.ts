@@ -15,6 +15,38 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     headers: { ...defaultHeaders, ...options.headers },
   });
 
+  // Obsluga refresh
+  if (response.status === 401) {
+    // Nie fetchuje jesli refresh sie nie powiodl
+    if (endpoint === '/auth/refresh') {
+      throw new Error('Session expired');
+    }
+
+    const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!refreshResponse.ok) {
+      throw new Error('Session expired');
+    }
+
+    const retryResponse = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      credentials: 'include',
+      headers: { ...defaultHeaders, ...options.headers },
+    });
+
+    const retryData = await retryResponse.json();
+
+    if (!retryResponse.ok) {
+      throw new Error(retryData?.message || 'API request failed');
+    }
+
+    return retryData;
+  }
+  //
+
   const data = await response.json();
 
   if (!response.ok) {
