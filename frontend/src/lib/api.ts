@@ -19,6 +19,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
   if (response.status === 401) {
     // Nie fetchuje jesli refresh sie nie powiodl
     if (endpoint === '/auth/refresh') {
+      window.location.href = '/Login';
       throw new Error('Session expired');
     }
 
@@ -28,6 +29,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     });
 
     if (!refreshResponse.ok) {
+      window.location.href = '/Login';
       throw new Error('Session expired');
     }
 
