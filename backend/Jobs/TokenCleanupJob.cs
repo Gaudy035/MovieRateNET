@@ -19,7 +19,7 @@ public class TokenCleanupJob: IJob
     {
         _logger.LogInformation("[{Time}] -- Sprawdzanie tokenow", DateTime.Now);
 
-        var dateToRemove = DateTimeOffset.UtcNow.AddDays(-3);
+        var dateToRemove = DateTimeOffset.UtcNow.AddDays(-1);
 
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
