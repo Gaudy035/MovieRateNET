@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using backend.Data;
 using backend.Services;
+using backend.Jobs;
+using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +69,22 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// Quartz
+builder.Services.AddQuartz(q =>
+{
+    var jobKey = new JobKey("TokenCleanupJob");
+
+    q.AddJob<TokenCleanupJob>(options => options.WithIdentity(jobKey));
+
+    q.AddTrigger(options => options
+        .ForJob(jobKey)
+        .WithIdentity("TokenCleanupJobTrigger")
+        .WithCronSchedule("0 0 3 * * ?")
+    );
+});
+
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 // Serwisy i interfejsy
 builder.Services.AddScoped<IMovieService, MovieService>();

@@ -17,7 +17,7 @@ public class TokenCleanupJob: IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        _logger.LogInformation("{Time} -- Sprawdzanie tokenow", DateTime.Now);
+        _logger.LogInformation("[{Time}] -- Sprawdzanie tokenow", DateTime.Now);
 
         var dateToRemove = DateTimeOffset.UtcNow.AddDays(-3);
 
@@ -25,7 +25,7 @@ public class TokenCleanupJob: IJob
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var tokensToRemove = await dbContext.RefreshTokens
-            .Where(rt => !rt.IsActive && (rt.RevokedAt <= dateToRemove || rt.ExpiresAt <= dateToRemove))
+            .Where(rt => rt.RevokedAt <= dateToRemove || rt.ExpiresAt <= dateToRemove)
             .ToListAsync();
 
         var tokensFound = tokensToRemove.Count;
