@@ -64,19 +64,19 @@ public class AuthService: IAuthService
         return newRefreshToken;
     }
 
-    public async Task<bool> RevokeToken(string refreshTokenValue)
+    public async Task RevokeToken(string refreshTokenValue)
     {
         var refreshToken = await _context.RefreshTokens
             .FirstOrDefaultAsync(rt => rt.TokenValue == refreshTokenValue);
         if(refreshToken == null)
         {
-            return false;
+            return;
         }
         
         refreshToken.IsActive = false;
         refreshToken.RevokedAt = DateTimeOffset.UtcNow;
+        
         await _context.SaveChangesAsync();
-        return true;
     }
 
     public async Task<LoginResponseDto?> Refresh(string refreshTokenValue)
